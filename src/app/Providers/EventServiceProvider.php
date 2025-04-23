@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\FileChanged;
 use App\Listeners\LogFileChanged;
+use App\Listeners\OptimizeImageFile;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -16,6 +17,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         FileChanged::class => [
             LogFileChanged::class,
+            OptimizeImageFile::class,
         ],
     ];
 
