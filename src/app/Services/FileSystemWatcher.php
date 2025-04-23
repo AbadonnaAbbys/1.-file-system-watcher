@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Events\FileChanged;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\File;
 
 class FileSystemWatcher
 {
@@ -84,7 +85,19 @@ class FileSystemWatcher
 
     private function dispatchEvent(string $path, string $type): void
     {
-        Event::dispatch(new FileChanged($path, $type));
-        Log::info("File system event: $type - $path");
+        // Check if this file was recently modified by our code
+        $modifiedFiles = Cache::get('modified_files', []);
+        $recentlyModified = isset($modifiedFiles[$path]) &&
+            (now()->timestamp - $modifiedFiles[$path]) < 10; // 10 seconds threshold
+
+        // If recently modified by our code, don't dispatch an event or dispatch as internal
+        if ($recentlyModified) {
+            // Either skip completely:
+            return;
+        } else {
+            // Otherwise dispatch as external
+            Event::dispatch(new FileChanged($path, $type, 'external'));
+            Log::info("External file system event: $type - $path");
+        }
     }
 }

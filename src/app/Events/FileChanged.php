@@ -13,14 +13,16 @@ class FileChanged
 
     public string $path;
     public string $type;
+    public string $source;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(string $path, string $type)
+    public function __construct(string $path, string $type, string $source)
     {
         $this->path = $path;
         $this->type = $type; // 'created', 'modified', 'deleted'
+        $this->source = $source; // 'external' or 'internal'
     }
 
     /**

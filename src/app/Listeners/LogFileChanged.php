@@ -14,6 +14,11 @@ class LogFileChanged
      */
     public function handle(FileChanged $event): void
     {
+        // Skip processing for internally generated changes
+        if ($event->source === 'internal') {
+            return;
+        }
+
         Log::info("File {$event->type}: {$event->path}");
     }
 }

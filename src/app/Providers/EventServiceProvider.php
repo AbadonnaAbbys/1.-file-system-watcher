@@ -6,6 +6,7 @@ use App\Events\FileChanged;
 use App\Listeners\LogFileChanged;
 use App\Listeners\OptimizeImageFile;
 use App\Listeners\ProcessJsonFile;
+use App\Listeners\ProcessTextFile;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -20,6 +21,7 @@ class EventServiceProvider extends ServiceProvider
             LogFileChanged::class,
             OptimizeImageFile::class,
             ProcessJsonFile::class,
+            ProcessTextFile::class,
         ],
     ];
 

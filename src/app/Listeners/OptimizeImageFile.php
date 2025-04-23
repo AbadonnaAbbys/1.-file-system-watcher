@@ -14,17 +14,22 @@ class OptimizeImageFile implements ShouldQueue
 {
     use InteractsWithQueue;
 
-    private const string OPTIMIZED_FILES_CACHE_KEY = 'optimized_image_files';
+    private const string MODIFIED_FILES_CACHE_KEY = 'modified_files';
 
     // Set retry limits
-    public $tries = 3;
-    public $backoff = [5, 15, 30];
+    public int $tries = 3;
+    public array $backoff = [5, 15, 30];
 
     /**
      * Handle the event.
      */
     public function handle(FileChanged $event): void
     {
+        // Skip processing for internally generated changes
+        if ($event->source === 'internal') {
+            return;
+        }
+
         $path = $event->path;
         $type = $event->type;
 
@@ -52,23 +57,21 @@ class OptimizeImageFile implements ShouldQueue
         $fileHash = md5($path . '.' . filemtime($path));
         $optimizedFiles = Cache::get(self::OPTIMIZED_FILES_CACHE_KEY, []);
 
-        if (in_array($fileHash, $optimizedFiles)) {
-//            Log::info("Image already optimized, skipping: $path");
+        // Safely get file modification time for file identification
+        $mtime = File::exists($path) ? filemtime($path) : 0;
+        $fileHash = md5($path . '.' . $mtime);
+
+        // Check if we've already processed this specific file state
+        $processedFiles = Cache::get('processed_image_files', []);
+        if (in_array($fileHash, $processedFiles)) {
+            Log::info("Image already processed, skipping: $path");
             return;
         }
 
+
         try {
-            // Safely get file modification time
-            $mtime = File::exists($path) ? filemtime($path) : 0;
-            $fileHash = md5($path . '.' . $mtime);
-
-            // Get cached optimized files list
-            $optimizedFiles = Cache::get(self::OPTIMIZED_FILES_CACHE_KEY, []);
-
-            if (in_array($fileHash, $optimizedFiles)) {
-                Log::info("Image already optimized, skipping: $path");
-                return;
-            }
+            // Mark this file as being modified to prevent recursive processing
+            $this->markFileAsModified($path);
 
             // Get quality settings from .env
             $jpegQuality = (int)env('IMAGE_JPEG_QUALITY', 80);
@@ -96,7 +99,7 @@ class OptimizeImageFile implements ShouldQueue
             }
 
             $optimizedFiles[] = $fileHash;
-            Cache::put(self::OPTIMIZED_FILES_CACHE_KEY, $optimizedFiles, now()->addDays(30));
+            Cache::put('processed_image_files', $processedFiles, now()->addDays(7));
 
             Log::info("Successfully optimized image: $path");
         } catch (Exception $e) {
@@ -106,6 +109,17 @@ class OptimizeImageFile implements ShouldQueue
             // Re-throw the exception to trigger Laravel's retry mechanism
             throw $e;
         }
+    }
+
+    /**
+     * Mark a file as being modified by our code
+     * Using a shared cache key for all file types
+     */
+    private function markFileAsModified(string $path): void
+    {
+        $modifiedFiles = Cache::get(self::MODIFIED_FILES_CACHE_KEY, []);
+        $modifiedFiles[$path] = now()->timestamp;
+        Cache::put(self::MODIFIED_FILES_CACHE_KEY, $modifiedFiles, now()->addMinutes(5));
     }
 
     /**
