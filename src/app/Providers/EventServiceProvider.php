@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\FileChanged;
+use App\Listeners\ExtractZipFile;
 use App\Listeners\LogFileChanged;
 use App\Listeners\OptimizeImageFile;
 use App\Listeners\ProcessJsonFile;
@@ -22,6 +23,7 @@ class EventServiceProvider extends ServiceProvider
             OptimizeImageFile::class,
             ProcessJsonFile::class,
             ProcessTextFile::class,
+            ExtractZipFile::class,
         ],
     ];
 
