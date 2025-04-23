@@ -1,0 +1,16 @@
+.git
+.idea
+.vscode
+node_modules
+storage/*
+!storage/framework
+!storage/framework/cache
+!storage/framework/sessions
+!storage/framework/views
+bootstrap/cache/*
+vendor/*
+.env
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
