@@ -1,61 +1,149 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# File System Watcher
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based application that monitors file system changes and performs various actions based on the file type and event.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Real-time File Monitoring**: Watches specified directories for file changes
+- **Event-Based Processing**: Triggers appropriate actions based on file events (created, modified, deleted)
+- **Image Optimization**: Automatically optimizes image files
+- **JSON Processing**: Processes JSON files when created or modified
+- **Text File Processing**: Handles text files as needed
+- **ZIP Extraction**: Automatically extracts ZIP files
+- **Deleted Image Replacement**: Replaces deleted images with random memes
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## System Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+
+- Laravel 10.x
+- Composer
 
-## Learning Laravel
+## Getting Started
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Installation
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+1. Clone the repository:
+   ```
+   git clone [repository-url]
+   cd file-system-watcher
+   ```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+2. Install dependencies:
+   ```
+   composer install
+   ```
 
-## Laravel Sponsors
+3. Set up environment:
+   ```
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. Configure your environment variables in `.env` file:
+   ```
+   WATCHER_DIRECTORY=/path/to/watched
+   IMAGE_JPEG_QUALITY=80
+   IMAGE_PNG_COMPRESSION=9
+   IMAGE_WEBP_QUALITY=80
+   MEME_API_URL=https://meme-api.com/gimme
+   ```
 
-### Premium Partners
+### Running the Application
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+Start the file watcher:
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Configuration Options
 
-## Code of Conduct
+| Environment Variable | Description | Default |
+|---------------------|-------------|---------|
+| `WATCHER_DIRECTORY` | Directory to watch for changes | `/app/watched` |
+| `IMAGE_JPEG_QUALITY` | JPEG compression quality | 80 |
+| `IMAGE_PNG_COMPRESSION` | PNG compression level | 9 |
+| `IMAGE_WEBP_QUALITY` | WebP compression quality | 80 |
+| `MEME_API_URL` | API for fetching memes | https://meme-api.com/gimme |
+| `ZIP_EXTRACT_PATH` | Path to extract ZIP files | storage/extracted |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Event Listeners
 
-## Security Vulnerabilities
+The application includes several event listeners:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `LogFileChanged`: Logs all file change events
+- `OptimizeImageFile`: Optimizes image files
+- `ProcessJsonFile`: Processes JSON files
+- `ProcessTextFile`: Handles text files
+- `ExtractZipFile`: Extracts ZIP archives
+- `ReplaceDeletedFileWithMeme`: Replaces deleted images with memes
 
-## License
+## Development Challenges and Solutions
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Challenges Encountered
+
+1. **External API Reliability**
+    - The meme API (https://meme-api.com/gimme) occasionally returned 5xx errors, causing the file replacement functionality to fail.
+    - This resulted in "Failed to fetch meme" errors in the log and missing replacement files.
+
+2. **Handling Multiple File Types**
+    - Different file types required different processing approaches, making the codebase potentially complex.
+    - Initial approach led to tightly coupled code that was difficult to maintain.
+
+3. **Race Conditions**
+    - Files being processed simultaneously could cause locks or corrupted data.
+    - Needed to ensure atomic operations when multiple files changed at once.
+
+4. **Error Recovery**
+    - System needed to gracefully handle errors without stopping the entire watching process.
+    - External service failures shouldn't affect other file processing tasks.
+
+### Preventing Infinite Processing Loops
+
+One of the most significant challenges in developing the FileSystemWatcher was preventing infinite processing loops. These loops could occur when:
+
+1. **File Processing Triggers More Changes**: When processing a file (like optimizing an image) creates another file change event, which then triggers the same processor again.
+
+2. **Replacement Files Trigger Events**: When a replaced or generated file (like a meme replacing a deleted image) triggers new file change events.
+
+3. **Recursive Processing**: When processing extracted ZIP files creates new events for each extracted file.
+
+#### Solution: Event Fingerprinting and Processing Lock
+
+To solve this problem, we implemented a multi-layered approach:
+
+1. **Event Fingerprinting**:
+    - Each file change event is assigned a unique fingerprint based on the file path, modification time, and action type.
+    - Before processing an event, the system checks if this fingerprint was recently processed.
+    - This prevents the same physical file change from being processed multiple times.
+
+2. **Processing Lock Mechanism**:
+    - A temporary flag file is created during processing with the format `.processing_{hash}`.
+    - The watcher ignores any files that have an active processing lock.
+    - Locks automatically expire after a configurable timeout period (default: 30 seconds).
+
+3. **Event Debouncing**:
+    - Multiple rapid changes to the same file are consolidated into a single event.
+    - This is particularly useful for applications that save files incrementally.
+
+4. **Intelligent Path Exclusions**:
+    - The system maintains a registry of paths that are currently being processed.
+    - Any changes detected in these paths during processing are ignored.
+    - Paths are automatically released from this registry when processing completes.
+
+Example implementation:
+
+```php
+// Before processing a file
+if ($this->isBeingProcessed($path)) {
+    return; // Skip processing to avoid loops
+}
+
+// Register file as being processed
+$this->markAsProcessing($path);
+
+try {
+    // Process the file
+    $this->processFile($path);
+} finally {
+    // Always release the processing lock, even if an exception occurs
+    $this->releaseProcessing($path);
+}
+```
