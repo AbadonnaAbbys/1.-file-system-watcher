@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: file-system-watcher-app
     volumes:
-      - ./:/app
+      - ./src:/app
       - /app/vendor # Don't mount host vendor directory
       - /app/node_modules # Don't mount host node_modules
     environment:
