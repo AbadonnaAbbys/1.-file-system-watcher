@@ -1,4 +1,3 @@
-
 FROM php:8.3-fpm-alpine
 
 # Install dependencies
@@ -20,31 +19,29 @@ RUN docker-php-ext-install pdo pdo_mysql zip gd
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set working directory
+# Set working directory for Laravel application
 WORKDIR /app
 
-# Copy only composer files first for better layer caching
-COPY composer.* ./
+# Create watched directory and other required directories
+RUN mkdir -p /app/watched && chmod -R 777 /app/watched && \
+    mkdir -p /app/storage/framework/sessions /app/storage/framework/views /app/storage/framework/cache /app/storage/logs && \
+    mkdir -p /app/bootstrap/cache && \
+    chmod -R 777 /app/storage && \
+    chmod -R 777 /app/bootstrap/cache
 
-# Check if composer.json is valid, if not create a basic one
-RUN if ! composer validate --no-check-publish 2>/dev/null; then \
-    echo '{"name": "laravel/laravel", "type": "project", "require": {"php": "^8.3"}}' > composer.json; \
-    fi
+# Create startup script
+RUN echo '#!/bin/sh' > /usr/local/bin/start.sh && \
+    echo 'if [ -f /app/composer.json ]; then' >> /usr/local/bin/start.sh && \
+    echo '  if [ ! -d /app/vendor ] || [ ! -f /app/vendor/autoload.php ]; then' >> /usr/local/bin/start.sh && \
+    echo '    composer install --no-interaction --no-progress' >> /usr/local/bin/start.sh && \
+    echo '  fi' >> /usr/local/bin/start.sh && \
+    echo '  if [ ! -f /app/.env ] && [ -f /app/.env.example ]; then' >> /usr/local/bin/start.sh && \
+    echo '    cp /app/.env.example /app/.env' >> /usr/local/bin/start.sh && \
+    echo '    php artisan key:generate --ansi' >> /usr/local/bin/start.sh && \
+    echo '  fi' >> /usr/local/bin/start.sh && \
+    echo 'fi' >> /usr/local/bin/start.sh && \
+    echo 'exec php -S 0.0.0.0:9000 -t /app/public' >> /usr/local/bin/start.sh && \
+    chmod +x /usr/local/bin/start.sh
 
-# Create a Laravel project structure if needed
-RUN if [ ! -d "app" ]; then \
-    composer create-project --prefer-dist laravel/laravel:^10.0 temp && \
-    mv temp/* . && \
-    mv temp/.* . 2>/dev/null || true && \
-    rmdir temp; \
-    fi
-
-# Copy the rest of the application code
-COPY . .
-
-# Make sure storage directory is writable
-RUN mkdir -p storage/framework/{sessions,views,cache} && \
-    chmod -R 777 storage
-
-# Command to run PHP-FPM server
-CMD ["php-fpm"]
+# Use startup script
+CMD ["/usr/local/bin/start.sh"]

@@ -7,6 +7,7 @@ services:
     container_name: file-system-watcher-app
     volumes:
       - ./src:/app
+      - ./watched:/app/watched
       - /app/vendor # Don't mount host vendor directory
       - /app/node_modules # Don't mount host node_modules
     environment:
@@ -17,6 +18,7 @@ services:
       - DB_DATABASE=${DB_DATABASE:-laravel}
       - DB_USERNAME=${DB_USERNAME:-sail}
       - DB_PASSWORD=${DB_PASSWORD:-password}
+      - WATCHER_DIRECTORY=${WATCHER_DIRECTORY:-/app/watched}
     ports:
       - "9000:9000"
     networks:
